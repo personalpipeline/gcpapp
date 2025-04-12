@@ -1,9 +1,17 @@
 import streamlit as st
 from google.cloud import language_v1
+import google.auth
+import json
 
-# Initialize the Natural Language client using ADC
-client = language_v1.LanguageServiceClient()
-project_id = "emotionapp-456405"  # Your GCP project ID
+# Authenticate using Streamlit Secrets
+try:
+    creds_dict = st.secrets["gcp_credentials"]
+    creds = google.oauth2.service_account.Credentials.from_service_account_info(creds_dict)
+    client = language_v1.LanguageServiceClient(credentials=creds)
+    project_id = creds_dict["project_id"]
+except Exception as e:
+    st.error(f"Error loading Google Cloud credentials: {e}")
+    st.stop()
 
 def analyze_sentiment(text):
     document = language_v1.Document(content=text, type_=language_v1.Document.Type.PLAIN_TEXT)
@@ -42,15 +50,9 @@ if st.button("Detect Emotion"):
     else:
         st.warning("Please enter some text.")
 
-# Basic error handling with page refresh (Streamlit's way)
 if "error" in st.session_state and st.session_state["error"]:
     st.error("An error occurred. The page will refresh in a few seconds.")
     import time
     time.sleep(3)
     st.session_state["error"] = False
     st.rerun()
-
-# Example of how an error might be triggered (for demonstration)
-# if st.button("Trigger Error (for testing refresh)"):
-#     st.session_state["error"] = True
-#     st.rerun()
